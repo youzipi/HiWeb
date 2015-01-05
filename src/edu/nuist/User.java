@@ -4,6 +4,7 @@ import edu.nuist.hibean.HiBean;
 import edu.nuist.util.Configuration;
 import org.json.JSONException;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
@@ -15,7 +16,14 @@ import java.util.LinkedList;
  * date: 2015/1/5 15:27
  */
 public class User extends HiBean {
+    public User(String className) throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException {
+        super(className);
+    }
 
+    public User() throws ClassNotFoundException, FileNotFoundException, IOException, IllegalAccessException, InstantiationException {
+        super();
+
+    }
 
     private int id;
     private String name;
@@ -58,10 +66,12 @@ public class User extends HiBean {
         String Jsons = "[{\"id\":0,\"name\":\"s0\"},{\"id\":1,\"name\":\"s1\"},{\"id\":2,\"name\":\"s2\"}]";
         String Json = "{\"id\":0,\"name\":\"s0\"}";
         Configuration.setWebBeansDefinePath("D:\\Desktop\\HiWeb\\HiWeb\\src\\");
-        User bean = new User();
-        bean.init(User.class.getName());
+        User bean = new User(User.class.getName());
+//        bean.init(User.class.getName());
         bean = (User)bean.getBeanFromJson(Json);
+
         System.out.println(bean);
+
         LinkedList<HiBean> list = bean.getBeanLinkedListFromJson(Jsons);
         for(HiBean hibean:list){
             System.out.println((User)hibean);

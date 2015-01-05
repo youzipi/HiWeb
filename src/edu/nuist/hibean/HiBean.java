@@ -8,6 +8,7 @@ import org.json.JSONObject;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
@@ -20,16 +21,22 @@ public abstract class HiBean {
     private Properties prop = new Properties();
     private Class<?> classType;//
 
-    public void init(String className) throws ClassNotFoundException, FileNotFoundException, IOException{
+    public HiBean(String className) throws ClassNotFoundException, FileNotFoundException, IOException, IllegalAccessException, InstantiationException {
     	this.classType =  Class.forName(className);
         String simpleName = this.classType.getSimpleName();
     	this.prop.load(new FileInputStream(Configuration.webBeansClassPath + simpleName + Configuration.beanPropFileExt));
     }
 
+    public HiBean() {
+
+    }
+
     public HiBean getBeanFromJson(String Json) throws JSONException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         JSONObject jsonObject = new JSONObject(Json);
+        Constructor constructor = this.classType.getDeclaredConstructor(String.class);
+        Object o = constructor.newInstance(this.classType.getName());
 //        Object o = this.classType.newInstance();
-        Object o = this;
+//        Object o = this;
 
         Iterator iter = jsonObject.keys();
         while(iter.hasNext()){
