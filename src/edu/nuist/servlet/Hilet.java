@@ -11,9 +11,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Properties;
 
 /**
@@ -24,22 +25,29 @@ import java.util.Properties;
  */
 
 
-class Bean extends HiBean{
-
-    Bean(String className) throws ClassNotFoundException, FileNotFoundException, IOException, IllegalAccessException, InstantiationException {
-        super(className);
-    }
-
-    Bean() {
-    }
-}
+//class Bean extends HiBean{
+//
+//    Bean(String className) throws ClassNotFoundException, FileNotFoundException, IOException, IllegalAccessException, InstantiationException {
+//        super(className);
+//    }
+//
+//    Bean() {
+//    }
+//}
 
 
 public class Hilet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doPost(req, resp);
+        String jsonStr = req.getParameter("str");
+        System.out.println(req.getParameter("str"));
+        System.out.println(jsonStr);
+        try {
+            HiBean hibean = toJson(jsonStr);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -56,13 +64,17 @@ public class Hilet extends HttpServlet {
         String beanName = jsonObject.getString("class");
         String jsonObjectString = jsonObject.getString("param");
 //        System.out.println(beanName);
+
         prop.load(new FileInputStream(Configuration.webBeansClassPath + beanName + Configuration.servletPropFileExt));
         System.out.println(prop);
         String className = prop.getProperty(beanName);//属性值类型
-
+        Class<?> classType = Class.forName(className);
+        Constructor<?> constructor = classType.getDeclaredConstructor(String.class);
+        Object o = constructor.newInstance(classType.getName());
         System.out.println(className);
-        Bean bean = new Bean(className);
-        HiBean hibean = bean.getBeanFromJson(jsonObjectString);
+
+        Method getBeanFromJson = classType.getMethod("getBeanFromJson",String.class);
+        HiBean hibean = (HiBean)getBeanFromJson.invoke(o,jsonObjectString);
         return hibean;
     }
 
