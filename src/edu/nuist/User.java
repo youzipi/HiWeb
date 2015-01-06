@@ -69,9 +69,12 @@ public class User extends HiBean {
         User bean = new User(User.class.getName());
 //        bean.init(User.class.getName());
         bean = (User)bean.getBeanFromJson(Json);
+//        User bean = (User)(new HiBean("User").getBeanFromJson(Json));
+
 
         System.out.println(bean);
 
+//        LinkedList<HiBean> list = bean.getBeanLinkedListFromJson(Jsons);
         LinkedList<HiBean> list = bean.getBeanLinkedListFromJson(Jsons);
         for(HiBean hibean:list){
             System.out.println((User)hibean);

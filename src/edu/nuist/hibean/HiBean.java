@@ -25,6 +25,7 @@ public abstract class HiBean {
     	this.classType =  Class.forName(className);
         String simpleName = this.classType.getSimpleName();
     	this.prop.load(new FileInputStream(Configuration.webBeansClassPath + simpleName + Configuration.beanPropFileExt));
+
     }
 
     public HiBean() {
