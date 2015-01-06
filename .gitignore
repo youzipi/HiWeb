@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 build
 .project
 .classpath
+=======
+
+>>>>>>> 55b5d19530874d64fb646152187ff660a5e1d2cf
 
 ###Eclipse
 *.pydevproject
@@ -16,7 +20,10 @@ local.properties
 .settings/
 .loadpath
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 55b5d19530874d64fb646152187ff660a5e1d2cf
 # External tool builders
 .externalToolBuilders/
 
@@ -64,5 +71,8 @@ crashlytics.properties
 crashlytics-build.properties
 
 
+<<<<<<< HEAD
 *.pdf
 *.class
+=======
+>>>>>>> 55b5d19530874d64fb646152187ff660a5e1d2cf
