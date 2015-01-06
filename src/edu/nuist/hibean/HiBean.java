@@ -22,7 +22,8 @@ public abstract class HiBean {
     private Class<?> classType;//
 
     public HiBean(String className) throws ClassNotFoundException, FileNotFoundException, IOException, IllegalAccessException, InstantiationException {
-    	this.classType =  Class.forName(className);
+        System.out.println("HiBean:className="+className);
+        this.classType =  Class.forName(className);
         String simpleName = this.classType.getSimpleName();
     	this.prop.load(new FileInputStream(Configuration.webBeansClassPath + simpleName + Configuration.beanPropFileExt));
 
