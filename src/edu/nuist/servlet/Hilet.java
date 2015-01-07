@@ -42,7 +42,6 @@ public class Hilet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String jsonStr = req.getParameter("str");
         System.out.println(req.getParameter("str"));
-        System.out.println(jsonStr);
         try {
             HiBean hibean = toJson(jsonStr);
         } catch (Exception e) {
