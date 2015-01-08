@@ -5,7 +5,12 @@
          version="3.1">
     <servlet>
         <servlet-name>updateuser</servlet-name>
-        <servlet-class>edu.nuist.servlet.Hilet</servlet-class>
+        <servlet-class>edu.nuist.TestLet</servlet-class>
+        <!--<servlet-class>edu.nuist.servlet.Hilet</servlet-class>-->
+        <init-param>
+            <param-name>servletProp</param-name>
+            <param-value>WEB-INF\classes\</param-value>
+        </init-param>
     </servlet>
     <servlet-mapping>
         <servlet-name>updateuser</servlet-name>

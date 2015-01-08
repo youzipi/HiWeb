@@ -3,6 +3,7 @@ package edu.nuist.util;
 public class Configuration {
     public static final String beanPropFileExt = ".class.properties";
     public static final String servletPropFileExt = ".servlet.properties";
+
     public static String webBeansClassPath = "";
 
 

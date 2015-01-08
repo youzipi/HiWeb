@@ -1,15 +1,17 @@
 package edu.nuist.servlet;
 
-import edu.nuist.User;
 import edu.nuist.hibean.HiBean;
 import edu.nuist.util.Configuration;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -36,26 +38,95 @@ import java.util.Properties;
 //}
 
 
+//public abstract class Hilet extends HttpServlet {
 public class Hilet extends HttpServlet {
+    protected HttpServletRequest request;
+    protected HttpSession session;
+    protected ServletContext application;
+
+
+    @Override
+    public void init(ServletConfig config) throws ServletException {
+        String prefix = config.getServletContext().getRealPath("/"); //获取当前路径
+        this.application = config.getServletContext();
+
+        String servletProp = config.getInitParameter("servletProp");//从web.xml中获取参数值,找到log4j这个文件
+        Configuration.setWebBeansDefinePath(prefix+servletProp);
+        System.out.println(Configuration.webBeansClassPath);
+
+//        System.setProperty("webappHome", prefix); //log4j.properties文件中的变量是在这里设置的
+//        System.out.println(System.getProperty("webappHome"));
+    }
+
+
+    //这个函数分别从request，session, application中取 key 指定的对象
+    //如果request中没有，就到session中去找，再没有就到application中去找，再找不到，返回空
+    //调用方法应该是 <User>get("user"),这样，直接调用
+    @SuppressWarnings("unchecked")
+    public <T> T get(String c) throws ClassCastException {
+        if (request.getAttribute(c) != null) {
+            return (T) request.getAttribute(c);
+        }
+        else if (session.getAttribute(c) != null) {
+            return (T) session.getAttribute(c);
+        }
+        else if (application.getAttribute(c) != null) {
+            return (T) application.getAttribute(c);
+        }
+        return null;
+    }
+
+    //这个函数主要是把对象o，使用key,存放到request, session, application中
+    public void put(String key, Object o, String scope) {
+        if (scope.equals("request")) {
+            request.setAttribute(key, o);
+        }
+        else if (scope.equals("session")) {
+            session.setAttribute(key, o);
+        }
+        else if (scope.equals("application")) {
+            application.setAttribute(key, o);
+        }
+    }
+
+    //这个函数主要是把对象o，使用key,存放到request中
+    public void put(String key, Object o) {
+        put(key, o, "request");
+    }
+
+
+    public void doing() throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException, NoSuchMethodException, JSONException, InvocationTargetException {
+    }
+
+
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String jsonStr = req.getParameter("str");
-        System.out.println(req.getParameter("str"));
+        this.request = req;
+        this.session = this.request.getSession();
         try {
-            HiBean hibean = toJson(jsonStr);
+            doing();
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+//        String jsonStr = req.getParameter("str");
+//        System.out.println(req.getParameter("str"));
+//        try {
+//            HiBean hibean = toJson(jsonStr);
+//            System.out.println(hibean);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        doPost(req,resp);
+        doPost(req, resp);
     }
 
 
-    public static HiBean toJson(String json) throws InvocationTargetException, NoSuchMethodException, InstantiationException, JSONException, IllegalAccessException, ClassNotFoundException, IOException {
+    public HiBean toJson(String json) throws InvocationTargetException, NoSuchMethodException, InstantiationException, JSONException, IllegalAccessException, ClassNotFoundException, IOException {
         Properties prop = new Properties();
 
         JSONObject jsonObject = new JSONObject(json);
@@ -72,21 +143,19 @@ public class Hilet extends HttpServlet {
         Object o = constructor.newInstance(classType.getName());
         System.out.println(className);
 
-        Method getBeanFromJson = classType.getMethod("getBeanFromJson",String.class);
-        HiBean hibean = (HiBean)getBeanFromJson.invoke(o,jsonObjectString);
+        Method getBeanFromJson = classType.getMethod("getBeanFromJson", String.class);
+        HiBean hibean = (HiBean) getBeanFromJson.invoke(o, jsonObjectString);
         return hibean;
     }
 
 
-
-
-
-    public static void main(String[] args) throws JSONException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException, IOException, ClassNotFoundException {
+    public static void main(String[] args) throws JSONException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException, IOException, ClassNotFoundException, ServletException {
 
         String json = "{class:'user',param:{'id':0,'name':'test'}}";
-        Configuration.setWebBeansDefinePath("D:\\Desktop\\HiWeb\\HiWeb\\src\\");
-        User user = (User)Hilet.toJson(json);
-        System.out.println(user);
+//        Configuration.setWebBeansDefinePath("D:\\Desktop\\HiWeb\\HiWeb\\src\\");
+        (new Hilet()).init();
+//        User user = (User) Hilet.toJson(json);
+//        System.out.println(user);
 
 
     }
