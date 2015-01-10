@@ -47,15 +47,13 @@ public class Hilet extends HttpServlet {
 
     @Override
     public void init(ServletConfig config) throws ServletException {
-        String prefix = config.getServletContext().getRealPath("/"); //获取当前路径
-        this.application = config.getServletContext();
+//        String prefix = config.getServletContext().getRealPath("/"); //获取当前路径
+//        this.application = config.getServletContext();
 
-        String servletProp = config.getInitParameter("servletProp");//从web.xml中获取参数值,找到log4j这个文件
-        Configuration.setWebBeansDefinePath(prefix+servletProp);
-        System.out.println(Configuration.webBeansClassPath);
+//        String servletProp = config.getInitParameter("servletProp");//从web.xml中获取参数值,找到log4j这个文件
+//        Configuration.setWebBeansDefinePath(prefix+servletProp);
 
-//        System.setProperty("webappHome", prefix); //log4j.properties文件中的变量是在这里设置的
-//        System.out.println(System.getProperty("webappHome"));
+
     }
 
 
@@ -104,20 +102,12 @@ public class Hilet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         this.request = req;
         this.session = this.request.getSession();
+        this.application = this.session.getServletContext();
         try {
             doing();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-//        String jsonStr = req.getParameter("str");
-//        System.out.println(req.getParameter("str"));
-//        try {
-//            HiBean hibean = toJson(jsonStr);
-//            System.out.println(hibean);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
     }
 
     @Override
@@ -134,7 +124,7 @@ public class Hilet extends HttpServlet {
         String beanName = jsonObject.getString("class");
         String jsonObjectString = jsonObject.getString("param");
 //        System.out.println(beanName);
-
+        System.out.println(Configuration.webBeansClassPath + beanName + Configuration.servletPropFileExt);
         prop.load(new FileInputStream(Configuration.webBeansClassPath + beanName + Configuration.servletPropFileExt));
         System.out.println(prop);
         String className = prop.getProperty(beanName);//属性值类型

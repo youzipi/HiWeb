@@ -67,6 +67,8 @@ public class User extends HiBean {
         String Json = "{\"id\":0,\"name\":\"s0\"}";
         Configuration.setWebBeansDefinePath("D:\\Desktop\\HiWeb\\HiWeb\\src\\");
         User bean = new User(User.class.getName());
+        bean.setName("1112");
+        System.out.println(bean.toJson());
 //        bean.init(User.class.getName());
         bean = (User)bean.getBeanFromJson(Json);
 //        User bean = (User)(new HiBean("User").getBeanFromJson(Json));

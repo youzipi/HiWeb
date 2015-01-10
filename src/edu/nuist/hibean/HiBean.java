@@ -6,7 +6,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -21,18 +20,33 @@ public abstract class HiBean {
     private Properties prop = new Properties();
     private Class<?> classType;//
 
-    public HiBean(String className) throws ClassNotFoundException, FileNotFoundException, IOException, IllegalAccessException, InstantiationException {
+    public HiBean(String className) throws ClassNotFoundException, IOException, IllegalAccessException, InstantiationException {
         System.out.println("HiBean:className="+className);
         this.classType =  Class.forName(className);
-        String simpleName = this.classType.getSimpleName();
-    	this.prop.load(new FileInputStream(Configuration.webBeansClassPath + simpleName + Configuration.beanPropFileExt));
+        String simpleName = this.classType.getSimpleName().toLowerCase();
+        this.prop.load(new FileInputStream(Configuration.webBeansClassPath + simpleName + Configuration.beanPropFileExt));
 
     }
 
-    public HiBean() {
+    public HiBean() throws IOException, ClassNotFoundException {
+        String className = this.getClass().getName();
+        this.classType =  Class.forName(className);
+        String simpleName = this.classType.getSimpleName().toLowerCase();
+//        System.out.println(Configuration.webBeansClassPath + simpleName + Configuration.beanPropFileExt);
+        this.prop.load(new FileInputStream(Configuration.webBeansClassPath + simpleName + Configuration.beanPropFileExt));
 
     }
 
+    /**
+     *
+     * @param Json
+     * @return HiBean
+     * @throws JSONException
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+     * @throws NoSuchMethodException
+     * @throws InvocationTargetException
+     */
     public HiBean getBeanFromJson(String Json) throws JSONException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         JSONObject jsonObject = new JSONObject(Json);
         Constructor constructor = this.classType.getDeclaredConstructor(String.class);
@@ -83,21 +97,46 @@ public abstract class HiBean {
         }
         return list;
     }
+
+    /**
+     *
+     * @return
+     * @throws NoSuchMethodException
+     * @throws JSONException
+     * @throws InvocationTargetException
+     * @throws IllegalAccessException
+     */
     public String toJson() throws NoSuchMethodException, JSONException, InvocationTargetException, IllegalAccessException {
+//        System.out.println("toooJson");
+        return toJsonObject().toString();
+
+    }
+
+    /**
+     *
+     * @return
+     * @throws NoSuchMethodException
+     * @throws JSONException
+     * @throws InvocationTargetException
+     * @throws IllegalAccessException
+     */
+    public JSONObject toJsonObject() throws NoSuchMethodException, JSONException, InvocationTargetException, IllegalAccessException {
         JSONObject jsonObject = new JSONObject();
 
         for (Object o1 : this.prop.entrySet()) {
             Map.Entry entry = (Map.Entry) o1;
             String key = (String) entry.getKey();
             String getter = "get" + key.substring(0, 1).toUpperCase() + key.substring(1);
-            System.out.println(getter);
+//            System.out.println(getter);
             Method getmethod = classType.getMethod(getter);
             Object value = getmethod.invoke(this);
-            System.out.println(key+"="+value);
-            jsonObject.put(key, value);//value为null时，不会被放入
+//            System.out.println(key+"="+value);
+            Object value2 = (value == null)?"null":value;
+            jsonObject.put(key, value2);
+//            jsonObject.put(key, value);//value为null时，不会被放入
         }
-
-        return jsonObject.toString();
+//        System.out.println(jsonObject);
+        return jsonObject;
     }
 
 

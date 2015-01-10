@@ -4,16 +4,38 @@
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
     <servlet>
-        <servlet-name>updateuser</servlet-name>
-        <servlet-class>edu.nuist.TestLet</servlet-class>
-        <!--<servlet-class>edu.nuist.servlet.Hilet</servlet-class>-->
+        <servlet-name>init</servlet-name>
+        <servlet-class>edu.nuist.servlet.InitLet</servlet-class>
         <init-param>
             <param-name>servletProp</param-name>
             <param-value>WEB-INF\classes\</param-value>
         </init-param>
+        <init-param>
+            <param-name>beanProp</param-name>
+            <param-value>WEB-INF\classes\</param-value>
+        </init-param>
+        <init-param>
+            <param-name>count</param-name>
+            <param-value>0</param-value>
+        </init-param>
+
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <context-param>
+        <param-name>context/param</param-name>
+        <param-value>avalible during application</param-value>
+    </context-param>
+    <servlet-mapping>
+        <servlet-name>init</servlet-name>
+        <url-pattern>/init</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>testLet</servlet-name>
+        <servlet-class>edu.nuist.TestLet</servlet-class>
+        <!--<servlet-class>edu.nuist.servlet.Hilet</servlet-class>-->
     </servlet>
     <servlet-mapping>
-        <servlet-name>updateuser</servlet-name>
+        <servlet-name>testLet</servlet-name>
         <url-pattern>/json</url-pattern>
     </servlet-mapping>
 
