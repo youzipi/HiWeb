@@ -14,7 +14,6 @@ import java.sql.*;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Properties;
-import java.util.PropertyResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,25 +25,17 @@ import java.util.regex.Pattern;
  */
 public class HiBase {
 
-
-    private static PropertyResourceBundle bundle; // 配置资源文件
-    private static Connection conn = null;
-    private static String driver;
-    private static String url;
-    private static String username;
-    private static String password;
-
-
-    private static Statement stmt = null;
-    private static ResultSet rs = null;
+    protected static Connection conn = null;
+    protected static Statement stmt = null;
+    protected static ResultSet rs = null;
 
     /**
      * 静态加载配置项，实例化driver
      */
     static {
         try {
-            getBundle();
-            Class.forName(driver);
+            Configuration.getBundle();
+            Class.forName(Configuration.getDriver());
         } catch (Exception e) {
             System.err.println("=== Error Creating hibasePropFileExt ===");
             e.printStackTrace();
@@ -54,11 +45,8 @@ public class HiBase {
 
     public HiBase() {
         try {
-            if (bundle == null) {
-                rebuildHibaseFactory();
-            }
             if (conn == null) {
-                conn = DriverManager.getConnection(url, username, password);
+                conn = DriverManager.getConnection(Configuration.getUrl(), Configuration.getUsername(), Configuration.getPassword());
             }
         } catch (SQLException e) {
             System.err.println("=== Error Connection conn ===");
@@ -67,67 +55,7 @@ public class HiBase {
     }
 
 
-    public static void getBundle() throws IOException {
-        // 读取配置文件
-        Configuration.setWebBeansDefinePath("D:\\Desktop\\HiWeb\\HiWeb\\src\\");
-        System.out.println(Configuration.webBeansClassPath + Configuration.hibasePropFileExt);
-        bundle = new PropertyResourceBundle(HiBase.class.getResourceAsStream(Configuration.webBeansClassPath + Configuration.hibasePropFileExt));
-        driver = bundle.getString("driver");
-        url = bundle.getString("connection.url");
-        username = bundle.getString("connection.username");
-        password = bundle.getString("connection.userpassword");
-
-    }
-
-    public Connection getConnection() throws IOException, ClassNotFoundException {
-        try {
-            if (bundle == null) {
-                rebuildHibaseFactory();
-            }
-            if (conn == null) {
-                conn = DriverManager.getConnection(url, username, password);
-            }
-        } catch (SQLException e) {
-            System.err.println("%%%% Error Connection conn %%%%");
-            e.printStackTrace();
-        }
-        return conn;
-    }
-
-    /**
-     * 重新获取配置项，实例化driver
-     *
-     * @author xutao
-     */
-    public static void rebuildHibaseFactory() {
-        try {
-            getBundle();
-            Class.forName(driver);
-        } catch (Exception e) {
-            System.err.println("=== Error Creating hibasePropFileExt ===");
-            e.printStackTrace();
-        }
-    }
-
-    public void closed() {
-        try {
-            if (rs != null) rs.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
-            if (stmt != null) stmt.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
-            if (conn != null) conn.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private HashMap<String, Object> list2map(LinkedList<Object> list) {
+    protected HashMap<String, Object> list2map(LinkedList<Object> list) {
         HashMap<String, Object> map = new HashMap<String, Object>();
 
         for (Object o : list) {
@@ -137,7 +65,7 @@ public class HiBase {
         return map;
     }
 
-    private String getSql(String sql_path, Object o) throws IOException {
+    protected String getSql(String sql_path, Object o) throws IOException {
         Class classType = o.getClass();
         Properties prop = new Properties();
         String simpleName = classType.getSimpleName().toLowerCase();
@@ -147,7 +75,7 @@ public class HiBase {
         return sql;
     }
 
-    private String getSql(String sql_path) throws IOException {
+    protected String getSql(String sql_path) throws IOException {
         String[] strings = sql_path.split("\\.");
         String simpleName = strings[0];
         String sqlpath = strings[1];
@@ -159,13 +87,13 @@ public class HiBase {
         return sql;
     }
 
-    private Matcher getMatcher(String sql) {
+    protected Matcher getMatcher(String sql) {
         String rule = "\\{(?<class>[\\w]+)\\.(?<param>[\\w]+)\\}";
         Pattern r = Pattern.compile(rule);
         return r.matcher(sql);
     }
 
-    private JSONObject getJsonObject(Object o) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    protected JSONObject getJsonObject(Object o) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         Class<?> classType = o.getClass();
         Method toJsonObject = classType.getMethod("toJsonObject");
         return (JSONObject) toJsonObject.invoke(o);
@@ -174,10 +102,11 @@ public class HiBase {
     public void exec(String sql_path, Object o) throws IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException, IOException {
 
         String sql = getSql(sql_path, o);
-        JSONObject jsonObject = getJsonObject(o);
         Matcher m = getMatcher(sql);
-
         StringBuffer sql2 = new StringBuffer();
+
+        JSONObject jsonObject = getJsonObject(o);
+
         while (m.find()) {
             String str = (m.group(0));
             String classname = m.group("class").toLowerCase();
@@ -195,27 +124,30 @@ public class HiBase {
                 e.printStackTrace();
                 value = "null";
             }
-            m.appendReplacement(sql2, value);
+            m.appendReplacement(sql2, "'" + value + "'");
         }
         m.appendTail(sql2);
         System.out.println(sql2.toString());
 
-//        this.update(sql2.toString());
+        this.update(sql2.toString());
 
     }
 
     public void exec(String sql_path, LinkedList list) throws IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException, IOException {
 
-        HashMap<String, Object> map = list2map(list);
 
         String sql = getSql(sql_path);
         Matcher m = getMatcher(sql);
         StringBuffer sql2 = new StringBuffer();
+
+        HashMap<String, Object> map = list2map(list);
+
         while (m.find()) {
             String str = (m.group(0));
 //            String classname = m.group("class").substring(0, 1).toUpperCase() + m.group("class").substring(1);
             String classname = m.group("class").toLowerCase();
             String param = m.group("param");
+
             Object o = map.get(classname);
             JSONObject jsonObject = getJsonObject(o);
             String value;
@@ -225,14 +157,32 @@ public class HiBase {
                 System.out.println(e.toString());
                 value = "null";
             }
-            m.appendReplacement(sql2, value);
+            m.appendReplacement(sql2, "'" + value + "'");
         }
         m.appendTail(sql2);
         System.out.println(sql2.toString());
+        this.update(sql2.toString());
     }
 
+    /**
+     * query
+     * @param sql_path
+     * @return ResultSet
+     * @throws IOException
+     */
+    public ResultSet query(String sql_path) throws IOException {
+        String sql = getSql(sql_path);
+        rs = getRs(sql);
+        return rs;
+    }
+
+    /**
+     * insert,update,delete
+     * @param sql
+     * @return ResultSet
+     */
     public int update(String sql) {
-        int num = 0;
+        int num;
         if (sql == null) sql = "";
         try {
             stmt = getStm();
@@ -246,7 +196,6 @@ public class HiBase {
 
     public Statement getStm() {
         try {
-            conn = getConnection();
             stmt = conn.createStatement();
             stmt.execute("set names utf8;");
         } catch (Exception e) {
@@ -255,13 +204,34 @@ public class HiBase {
         return stmt;
     }
 
-    public ResultSet getRs(String sql){
-        if(sql==null)sql="";
-        try{
-            stmt=getStm();
-            rs=stmt.executeQuery(sql);
-        }catch(SQLException e){e.printStackTrace();}
+    public ResultSet getRs(String sql) {
+        if (sql == null) sql = "";
+        try {
+            stmt = getStm();
+            rs = stmt.executeQuery(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return rs;
+    }
+
+
+    public void close() {
+        try {
+            if (rs != null) rs.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            if (stmt != null) stmt.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            if (conn != null) conn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException, NoSuchMethodException, JSONException, InvocationTargetException {
@@ -278,6 +248,6 @@ public class HiBase {
         list.add(department);
 
         (new HiBase()).exec("user_insert", u);
-        (new HiBase()).exec("user.xx_insert", list);
+//        (new HiBase()).exec("user.xx_insert", list);
     }
 }
