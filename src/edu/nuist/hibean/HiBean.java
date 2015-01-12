@@ -7,6 +7,7 @@ import org.json.JSONObject;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.Class;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -88,6 +89,10 @@ public abstract class HiBean {
     }
     public LinkedList<HiBean> getBeanLinkedListFromJson(String Json) throws JSONException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         JSONArray jsonArray = new JSONArray(Json);
+        return getListfromjsonArr(jsonArray);
+    }
+
+    public LinkedList<HiBean> getListfromjsonArr(JSONArray jsonArray) throws JSONException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         LinkedList<HiBean> list = new LinkedList<HiBean>();
 
         for(int i =0;i<jsonArray.length();i++){
@@ -97,6 +102,7 @@ public abstract class HiBean {
         }
         return list;
     }
+
 
     /**
      *

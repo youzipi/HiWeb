@@ -1,13 +1,15 @@
 package edu.nuist.hibase;
 
-import edu.nuist.Department;
-import edu.nuist.User;
+import edu.nuist.hibean.Grade;
+import edu.nuist.hibean.Student;
 import edu.nuist.util.Configuration;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.*;
@@ -25,9 +27,9 @@ import java.util.regex.Pattern;
  */
 public class HiBase {
 
-    protected static Connection conn = null;
-    protected static Statement stmt = null;
-    protected static ResultSet rs = null;
+    protected Connection conn = null;
+    protected Statement stmt = null;
+    protected ResultSet rs = null;
 
     /**
      * 静态加载配置项，实例化driver
@@ -65,7 +67,7 @@ public class HiBase {
         return map;
     }
 
-    protected String getSql(String sql_path, Object o) throws IOException {
+/*     protected String getSql(String sql_path, Object o) throws IOException {
         Class classType = o.getClass();
         Properties prop = new Properties();
         String simpleName = classType.getSimpleName().toLowerCase();
@@ -73,8 +75,13 @@ public class HiBase {
         String sql = prop.getProperty(sql_path);
         System.out.println(sql);
         return sql;
-    }
-
+        
+    /**
+     * 
+     * @param sql_path ex: user.user_insert
+     * @return 根据sql_path从配置文件中获取到的sql语句
+     * @throws IOException
+     */
     protected String getSql(String sql_path) throws IOException {
         String[] strings = sql_path.split("\\.");
         String simpleName = strings[0];
@@ -93,15 +100,26 @@ public class HiBase {
         return r.matcher(sql);
     }
 
-    protected JSONObject getJsonObject(Object o) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    protected JSONObject getJsonObject(Object o) throws NoSuchMethodException, IllegalAccessException {
         Class<?> classType = o.getClass();
+        System.out.println(classType.getName());
         Method toJsonObject = classType.getMethod("toJsonObject");
-        return (JSONObject) toJsonObject.invoke(o);
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = (JSONObject) toJsonObject.invoke(o);
+
+        } catch (InvocationTargetException e) {
+            System.out.println(e.getCause());
+            e.printStackTrace();
+
+        }
+        return jsonObject;
     }
 
-    public void exec(String sql_path, Object o) throws IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException, IOException {
+    public void exec(String sql_path, Student o) throws IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException, IOException {
 
-        String sql = getSql(sql_path, o);
+        //String sql = getSql(sql_path, o);
+        String sql = getSql(sql_path);
         Matcher m = getMatcher(sql);
         StringBuffer sql2 = new StringBuffer();
 
@@ -133,7 +151,7 @@ public class HiBase {
 
     }
 
-    public void exec(String sql_path, LinkedList list) throws IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException, IOException {
+    public void exec(String sql_path, LinkedList<Object> list) throws IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException, IOException {
 
 
         String sql = getSql(sql_path);
@@ -170,10 +188,12 @@ public class HiBase {
      * @return ResultSet
      * @throws IOException
      */
-    public ResultSet query(String sql_path) throws IOException {
+    public LinkedList query(String sql_path) throws IOException, NoSuchMethodException, IllegalAccessException, JSONException, SQLException, InstantiationException, InvocationTargetException, ClassNotFoundException {
         String sql = getSql(sql_path);
+        String className = sql_path.split("\\.")[0];
         rs = getRs(sql);
-        return rs;
+        LinkedList list = getListfromRs(rs, className);
+        return list;
     }
 
     /**
@@ -215,6 +235,55 @@ public class HiBase {
         return rs;
     }
 
+    /**
+     *
+     * @param rs ResultSet
+     * @param simpleName 类名，由sql_path获得
+     * @return LinkedList<Bean>
+     */
+
+    public  LinkedList getListfromRs(ResultSet rs,String simpleName) throws IOException, SQLException, JSONException, NoSuchMethodException, ClassNotFoundException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        Properties prop = new Properties();
+        prop.load(new FileInputStream(Configuration.webBeansClassPath + simpleName + Configuration.beanPropFileExt));
+//        String className = prop.getProperty("className");
+
+        String className = Configuration.beansPath+simpleName.substring(0,1).toUpperCase()+simpleName.substring(1);
+        Class<?> classType =  Class.forName(className);
+        Constructor<?> constructor = classType.getDeclaredConstructor(String.class);
+        Object o = constructor.newInstance(classType.getName());
+
+        JSONArray jsonArray = getjsonArrfromRs(rs);
+        Method toList = classType.getMethod("getListfromjsonArr",jsonArray.getClass());
+
+        return (LinkedList) toList.invoke(o,jsonArray);
+    }
+
+    /**
+     *
+     * @param rs ResultSet
+     * @return jsonArray 遍历rs填入jsonArray中
+     * @throws IOException
+     * @throws SQLException
+     * @throws JSONException
+     */
+    public JSONArray getjsonArrfromRs(ResultSet rs) throws IOException, SQLException, JSONException {
+        ResultSetMetaData metaData = rs.getMetaData();
+        int columnCount = metaData.getColumnCount();
+        JSONArray array = new JSONArray();
+        while (rs.next()) {
+            JSONObject jsonObj = new JSONObject();
+
+            for (int i = 1; i <= columnCount; i++) {
+                String columnName =metaData.getColumnLabel(i);
+                String value = rs.getString(columnName);
+                jsonObj.put(columnName, value);
+            }
+            array.put(jsonObj);
+        }
+        System.out.println(array);
+        return array;
+    }
+
 
     public void close() {
         try {
@@ -234,20 +303,37 @@ public class HiBase {
         }
     }
 
-    public static void main(String[] args) throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException, NoSuchMethodException, JSONException, InvocationTargetException {
+    public static void main(String[] args) throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException, NoSuchMethodException, JSONException, InvocationTargetException, SQLException {
         Configuration.setWebBeansDefinePath("D:\\Desktop\\HiWeb\\HiWeb\\src\\");
 
-        User u = new User();
-        u.setId(1);
+        Student u = new Student();
+        u.setId(15);
         u.setName("youzipi");
 
-        Department department = new Department();
-        department.setId("departmenttt");
         LinkedList<Object> list = new LinkedList<Object>();
-        list.add(u);
-        list.add(department);
+//        list.add(u);
 
-        (new HiBase()).exec("user_insert", u);
-//        (new HiBase()).exec("user.xx_insert", list);
+        HiBase hb = new HiBase();
+//        hb.exec("student.insert", u);
+        u.setId(2);
+        hb.exec("student.update",u);
+        u.setId(5);
+        hb.exec("student.delete",u);
+        LinkedList list3 = hb.query("student.select");
+        System.out.println(list3);
+
+        Grade grade = new Grade();
+        grade.setId(4);
+        grade.setCourse_id(1);
+        grade.setScore(99);
+        grade.setStu_id(1);
+        list.add(u);
+        list.add(grade);
+//        hb.exec("grade.insert",list);
+//        LinkedList list2 = hb.query("grade.select");
+//
+//        for(Object o:list2){
+//            System.out.println(o);
+//        }
     }
 }

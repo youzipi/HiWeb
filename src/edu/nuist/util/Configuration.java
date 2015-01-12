@@ -11,6 +11,7 @@ public class Configuration {
     public static final String hibasePropFileExt="hibase.cfg.properties";
 
     public static String webBeansClassPath = "";
+    public static String beansPath = "edu.nuist.hibean.";
 
 //    private static PropertyResourceBundle bundle; // 配置资源文件
     private static String driver;
@@ -37,6 +38,14 @@ public class Configuration {
     //WILL be set in the web service starts by a string ends with "/"
     public static void setWebBeansDefinePath(String classpath){
         webBeansClassPath = classpath;
+    }
+
+    public static String getBeansPath() {
+        return beansPath;
+    }
+
+    public static void setBeansPath(String beansPath) {
+        Configuration.beansPath = beansPath;
     }
 
     public static void getBundle() throws IOException {
