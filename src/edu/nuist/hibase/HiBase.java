@@ -31,6 +31,14 @@ public class HiBase {
     protected Statement stmt = null;
     protected ResultSet rs = null;
 
+
+
+    double get(){
+        double num;
+        num = 1.0;
+        return num;
+    }
+
     /**
      * 静态加载配置项，实例化driver
      */
