@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServlet;
  * user: youzipi
  * date: 2015/1/8 21:12
  */
-public class InitLet extends HttpServlet {
+public class Initlet extends HttpServlet {
 
     @Override
     public void init(ServletConfig config) throws ServletException {

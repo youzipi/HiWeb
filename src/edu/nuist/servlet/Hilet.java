@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -61,7 +62,7 @@ public class Hilet extends HttpServlet {
     //如果request中没有，就到session中去找，再没有就到application中去找，再找不到，返回空
     //调用方法应该是 <User>get("user"),这样，直接调用
     @SuppressWarnings("unchecked")
-    public <T> T get(String c) throws ClassCastException {
+    public final  <T> T get(String c) throws ClassCastException {
         if (request.getAttribute(c) != null) {
             return (T) request.getAttribute(c);
         }
@@ -75,7 +76,7 @@ public class Hilet extends HttpServlet {
     }
 
     //这个函数主要是把对象o，使用key,存放到request, session, application中
-    public void put(String key, Object o, String scope) {
+    public final void put(String key, Object o, String scope) {
         if (scope.equals("request")) {
             request.setAttribute(key, o);
         }
@@ -88,7 +89,7 @@ public class Hilet extends HttpServlet {
     }
 
     //这个函数主要是把对象o，使用key,存放到request中
-    public void put(String key, Object o) {
+    public final void put(String key, Object o) {
         put(key, o, "request");
     }
 
@@ -103,10 +104,57 @@ public class Hilet extends HttpServlet {
         this.request = req;
         this.session = this.request.getSession();
         this.application = this.session.getServletContext();
+//        System.out.println("doPost.str"+request.getParameter("str"));
         try {
             doing();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        try {
+            forward(req,resp);
+        } catch (Exception e) {
+
+            e.printStackTrace();
+        }
+    }
+
+
+    protected final <T> void forward(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        Properties prop = new Properties();
+
+        String letName = this.getClass().getSimpleName();
+        System.out.println(letName);
+//        Configuration.setWebBeansDefinePath("D:\\Desktop\\HiWeb\\HiWeb\\src\\");
+        System.out.println(Configuration.webBeansClassPath + letName + Configuration.outputPropFileExt);
+        prop.load(new FileInputStream(Configuration.webBeansClassPath + letName + Configuration.outputPropFileExt));
+        String param = prop.getProperty("json");
+        String next = prop.getProperty("next");
+        System.out.println("param="+param);
+        System.out.println("next="+next);
+        System.out.println(param != null);
+        if(param != null){
+            System.out.println("do param");
+            T message = get(param);
+            PrintWriter out = resp.getWriter();
+            out.println(message);
+        }
+        else if(next != null){
+            System.out.println("do next");
+            Class classType = Class.forName(next);
+            System.out.println(next);
+            Constructor constructor = classType.getDeclaredConstructor();
+            Object o = constructor.newInstance();
+            Method postMethod = classType.getDeclaredMethod("doPost", HttpServletRequest.class, HttpServletResponse.class);
+            postMethod.invoke(o,request,resp);
+//            Method[] methods = classType.getMethods();
+//            for(Method method:methods){
+//                System.out.print(method.getName() + ":");
+//                System.out.println(method.getParameterTypes());
+//
+//            }
+        }
+        else{
+            System.out.println("out.properties is empty");
         }
     }
 
@@ -116,12 +164,13 @@ public class Hilet extends HttpServlet {
     }
 
 
-    public HiBean toJson(String json) throws InvocationTargetException, NoSuchMethodException, InstantiationException, JSONException, IllegalAccessException, ClassNotFoundException, IOException {
+    public  final HiBean toJson(String json) throws InvocationTargetException, NoSuchMethodException, InstantiationException, JSONException, IllegalAccessException, ClassNotFoundException, IOException {
         Properties prop = new Properties();
 
+        System.out.println("json="+json);
         JSONObject jsonObject = new JSONObject(json);
         System.out.println(jsonObject);
-        String beanName = jsonObject.getString("class");
+        String beanName = jsonObject.getString("class").toLowerCase();
         String jsonObjectString = jsonObject.getString("param");
 //        System.out.println(beanName);
         System.out.println(Configuration.webBeansClassPath + beanName + Configuration.servletPropFileExt);
@@ -146,6 +195,15 @@ public class Hilet extends HttpServlet {
         (new Hilet()).init();
 //        User user = (User) Hilet.toJson(json);
 //        System.out.println(user);
+
+        Properties prop = new Properties();
+
+        String letName = (new edu.nuist.Testlet()).getClass().getSimpleName().toLowerCase();
+        System.out.println(letName);
+        Configuration.setWebBeansDefinePath("D:\\Desktop\\HiWeb\\HiWeb\\src\\");
+        System.out.println(Configuration.webBeansClassPath + letName + Configuration.outputPropFileExt);
+        prop.load(new FileInputStream(Configuration.webBeansClassPath + letName + Configuration.outputPropFileExt));
+
 
 
     }

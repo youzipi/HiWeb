@@ -8,6 +8,8 @@ public class Configuration {
     public static final String beanPropFileExt = ".class.properties";
     public static final String servletPropFileExt = ".servlet.properties";
     public static final String sqlPropFileExt = ".sql.properties";
+    public static final String outputPropFileExt=".output.properties";
+
     public static final String hibasePropFileExt="hibase.cfg.properties";
 
     public static String webBeansClassPath = "";

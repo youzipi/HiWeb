@@ -5,7 +5,7 @@
          version="3.1">
     <servlet>
         <servlet-name>init</servlet-name>
-        <servlet-class>edu.nuist.servlet.InitLet</servlet-class>
+        <servlet-class>edu.nuist.servlet.Initlet</servlet-class>
         <init-param>
             <param-name>servletProp</param-name>
             <param-value>WEB-INF\classes\</param-value>
@@ -21,22 +21,23 @@
 
         <load-on-startup>1</load-on-startup>
     </servlet>
-    <context-param>
-        <param-name>context/param</param-name>
-        <param-value>avalible during application</param-value>
-    </context-param>
     <servlet-mapping>
         <servlet-name>init</servlet-name>
         <url-pattern>/init</url-pattern>
     </servlet-mapping>
+    <!--<context-param>-->
+        <!--<param-name>context/param</param-name>-->
+        <!--<param-value>avalible during application</param-value>-->
+    <!--</context-param>-->
+
     <servlet>
-        <servlet-name>testLet</servlet-name>
-        <servlet-class>edu.nuist.TestLet</servlet-class>
+        <servlet-name>testlet</servlet-name>
+        <servlet-class>edu.nuist.Testlet</servlet-class>
         <!--<servlet-class>edu.nuist.servlet.Hilet</servlet-class>-->
     </servlet>
     <servlet-mapping>
-        <servlet-name>testLet</servlet-name>
-        <url-pattern>/json</url-pattern>
+        <servlet-name>testlet</servlet-name>
+        <url-pattern>/test</url-pattern>
     </servlet-mapping>
 
 </web-app>

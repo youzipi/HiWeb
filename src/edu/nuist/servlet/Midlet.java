@@ -1,6 +1,6 @@
-package edu.nuist;
+package edu.nuist.servlet;
 
-import edu.nuist.servlet.Hilet;
+import edu.nuist.User;
 import org.json.JSONException;
 
 import javax.servlet.ServletException;
@@ -13,24 +13,23 @@ import java.lang.reflect.InvocationTargetException;
  * project_name:java_demo
  * package_name:edu.nuist.servlet
  * user: youzipi
- * date: 2015/1/7 14:38
+ * date: 2015/1/17 19:25
  */
+public class Midlet extends Hilet {
+    public Midlet() {
+    }
 
-public class Testlet extends Hilet {
-    public Testlet() {
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        super.doPost(req, resp);
     }
 
     @Override
     public void doing() throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException, NoSuchMethodException, JSONException, InvocationTargetException {
-
-        String jsonStr = request.getParameter("str");
-//        System.out.println(request.getParameter("str"));
-        System.out.println("str="+jsonStr);
-        User A=(User)toJson(jsonStr);
-        //存储P
-        put("user", A, "request");
         //获取P
         User p=get("user");
+        p.setDepartment("Midlet");
+        put("user",p);
         System.out.println(p);
 
     }
@@ -39,12 +38,4 @@ public class Testlet extends Hilet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         super.doGet(req, resp);
     }
-
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doPost(req, resp);
-
-    }
-
-
 }
