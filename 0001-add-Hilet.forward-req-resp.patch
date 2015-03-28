@@ -1,0 +1,355 @@
+From ac5260688bf1eb2f82961ca9cca5e88397d1075b Mon Sep 17 00:00:00 2001
+From: youzipi <blake_12@qq.com>
+Date: Sat, 17 Jan 2015 20:45:00 +0800
+Subject: [PATCH] add Hilet.forward(req,resp)
+
+Signed-off-by: youzipi <blake_12@qq.com>
+---
+ src/edu/nuist/TestLet.java            | 28 ++++++++++-----
+ src/edu/nuist/servlet/Hilet.java      | 68 ++++++++++++++++++++++++++++++++---
+ src/edu/nuist/servlet/InitLet.java    |  2 +-
+ src/edu/nuist/servlet/Midlet.java     | 41 +++++++++++++++++++++
+ src/edu/nuist/util/Configuration.java |  2 ++
+ src/midlet.output.properties          |  1 +
+ src/testlet.output.properties         |  2 ++
+ web/WEB-INF/web.xml                   | 19 +++++-----
+ web/test.html                         |  2 +-
+ 9 files changed, 140 insertions(+), 25 deletions(-)
+ create mode 100644 src/edu/nuist/servlet/Midlet.java
+ create mode 100644 src/midlet.output.properties
+ create mode 100644 src/testlet.output.properties
+
+diff --git a/src/edu/nuist/TestLet.java b/src/edu/nuist/TestLet.java
+index 1e0d968..d49e792 100644
+--- a/src/edu/nuist/TestLet.java
++++ b/src/edu/nuist/TestLet.java
+@@ -3,6 +3,9 @@ package edu.nuist;
+ import edu.nuist.servlet.Hilet;
+ import org.json.JSONException;
+ 
++import javax.servlet.ServletException;
++import javax.servlet.http.HttpServletRequest;
++import javax.servlet.http.HttpServletResponse;
+ import java.io.IOException;
+ import java.lang.reflect.InvocationTargetException;
+ 
+@@ -13,20 +16,16 @@ import java.lang.reflect.InvocationTargetException;
+  * date: 2015/1/7 14:38
+  */
+ 
+-public class TestLet extends Hilet {
+-
+-    /**
+-     * Constructor of the object.
+-     */
+-    public TestLet() {
+-
+-        super();
++public class Testlet extends Hilet {
++    public Testlet() {
+     }
+ 
++    @Override
+     public void doing() throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException, NoSuchMethodException, JSONException, InvocationTargetException {
+ 
+-        //doget(request);    //传递request对象
+         String jsonStr = request.getParameter("str");
++//        System.out.println(request.getParameter("str"));
++        System.out.println("str="+jsonStr);
+         User A=(User)toJson(jsonStr);
+         //存储P
+         put("user", A, "request");
+@@ -36,5 +35,16 @@ public class TestLet extends Hilet {
+ 
+     }
+ 
++    @Override
++    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
++        super.doGet(req, resp);
++    }
++
++    @Override
++    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
++        super.doPost(req, resp);
++
++    }
++
+ 
+ }
+\ No newline at end of file
+diff --git a/src/edu/nuist/servlet/Hilet.java b/src/edu/nuist/servlet/Hilet.java
+index 455fc9c..2eaf9d1 100644
+--- a/src/edu/nuist/servlet/Hilet.java
++++ b/src/edu/nuist/servlet/Hilet.java
+@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
+ import javax.servlet.http.HttpSession;
+ import java.io.FileInputStream;
+ import java.io.IOException;
++import java.io.PrintWriter;
+ import java.lang.reflect.Constructor;
+ import java.lang.reflect.InvocationTargetException;
+ import java.lang.reflect.Method;
+@@ -61,7 +62,7 @@ public class Hilet extends HttpServlet {
+     //如果request中没有，就到session中去找，再没有就到application中去找，再找不到，返回空
+     //调用方法应该是 <User>get("user"),这样，直接调用
+     @SuppressWarnings("unchecked")
+-    public <T> T get(String c) throws ClassCastException {
++    public final  <T> T get(String c) throws ClassCastException {
+         if (request.getAttribute(c) != null) {
+             return (T) request.getAttribute(c);
+         }
+@@ -75,7 +76,7 @@ public class Hilet extends HttpServlet {
+     }
+ 
+     //这个函数主要是把对象o，使用key,存放到request, session, application中
+-    public void put(String key, Object o, String scope) {
++    public final void put(String key, Object o, String scope) {
+         if (scope.equals("request")) {
+             request.setAttribute(key, o);
+         }
+@@ -88,7 +89,7 @@ public class Hilet extends HttpServlet {
+     }
+ 
+     //这个函数主要是把对象o，使用key,存放到request中
+-    public void put(String key, Object o) {
++    public final void put(String key, Object o) {
+         put(key, o, "request");
+     }
+ 
+@@ -103,11 +104,58 @@ public class Hilet extends HttpServlet {
+         this.request = req;
+         this.session = this.request.getSession();
+         this.application = this.session.getServletContext();
++//        System.out.println("doPost.str"+request.getParameter("str"));
+         try {
+             doing();
+         } catch (Exception e) {
+             e.printStackTrace();
+         }
++        try {
++            forward(req,resp);
++        } catch (Exception e) {
++
++            e.printStackTrace();
++        }
++    }
++
++
++    protected final <T> void forward(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
++        Properties prop = new Properties();
++
++        String letName = this.getClass().getSimpleName();
++        System.out.println(letName);
++//        Configuration.setWebBeansDefinePath("D:\\Desktop\\HiWeb\\HiWeb\\src\\");
++        System.out.println(Configuration.webBeansClassPath + letName + Configuration.outputPropFileExt);
++        prop.load(new FileInputStream(Configuration.webBeansClassPath + letName + Configuration.outputPropFileExt));
++        String param = prop.getProperty("json");
++        String next = prop.getProperty("next");
++        System.out.println("param="+param);
++        System.out.println("next="+next);
++        System.out.println(param != null);
++        if(param != null){
++            System.out.println("do param");
++            T message = get(param);
++            PrintWriter out = resp.getWriter();
++            out.println(message);
++        }
++        else if(next != null){
++            System.out.println("do next");
++            Class classType = Class.forName(next);
++            System.out.println(next);
++            Constructor constructor = classType.getDeclaredConstructor();
++            Object o = constructor.newInstance();
++            Method postMethod = classType.getDeclaredMethod("doPost", HttpServletRequest.class, HttpServletResponse.class);
++            postMethod.invoke(o,request,resp);
++        }
++        else{
++            System.out.println("out.properties is empty");
++        }
+     }
+ 
+     @Override
+@@ -116,12 +164,13 @@ public class Hilet extends HttpServlet {
+     }
+ 
+ 
+-    public HiBean toJson(String json) throws InvocationTargetException, NoSuchMethodException, InstantiationException, JSONException, IllegalAccessException, ClassNotFoundException, IOException {
++    public  final HiBean toJson(String json) throws InvocationTargetException, NoSuchMethodException, InstantiationException, JSONException, IllegalAccessException, ClassNotFoundException, IOException {
+         Properties prop = new Properties();
+ 
++        System.out.println("json="+json);
+         JSONObject jsonObject = new JSONObject(json);
+         System.out.println(jsonObject);
+-        String beanName = jsonObject.getString("class");
++        String beanName = jsonObject.getString("class").toLowerCase();
+         String jsonObjectString = jsonObject.getString("param");
+ //        System.out.println(beanName);
+         System.out.println(Configuration.webBeansClassPath + beanName + Configuration.servletPropFileExt);
+@@ -147,6 +196,15 @@ public class Hilet extends HttpServlet {
+ //        User user = (User) Hilet.toJson(json);
+ //        System.out.println(user);
+ 
++        Properties prop = new Properties();
++
++        String letName = (new edu.nuist.Testlet()).getClass().getSimpleName().toLowerCase();
++        System.out.println(letName);
++        Configuration.setWebBeansDefinePath("D:\\Desktop\\HiWeb\\HiWeb\\src\\");
++        System.out.println(Configuration.webBeansClassPath + letName + Configuration.outputPropFileExt);
++        prop.load(new FileInputStream(Configuration.webBeansClassPath + letName + Configuration.outputPropFileExt));
++
++
+ 
+     }
+ }
+diff --git a/src/edu/nuist/servlet/InitLet.java b/src/edu/nuist/servlet/InitLet.java
+index 214afdf..8573e6a 100644
+--- a/src/edu/nuist/servlet/InitLet.java
++++ b/src/edu/nuist/servlet/InitLet.java
+@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServlet;
+  * user: youzipi
+  * date: 2015/1/8 21:12
+  */
+-public class InitLet extends HttpServlet {
++public class Initlet extends HttpServlet {
+ 
+     @Override
+     public void init(ServletConfig config) throws ServletException {
+diff --git a/src/edu/nuist/servlet/Midlet.java b/src/edu/nuist/servlet/Midlet.java
+new file mode 100644
+index 0000000..676ce50
+--- /dev/null
++++ b/src/edu/nuist/servlet/Midlet.java
+@@ -0,0 +1,41 @@
++package edu.nuist.servlet;
++
++import edu.nuist.User;
++import org.json.JSONException;
++
++import javax.servlet.ServletException;
++import javax.servlet.http.HttpServletRequest;
++import javax.servlet.http.HttpServletResponse;
++import java.io.IOException;
++import java.lang.reflect.InvocationTargetException;
++
++/**
++ * project_name:java_demo
++ * package_name:edu.nuist.servlet
++ * user: youzipi
++ * date: 2015/1/17 19:25
++ */
++public class Midlet extends Hilet {
++    public Midlet() {
++    }
++
++    @Override
++    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
++        super.doPost(req, resp);
++    }
++
++    @Override
++    public void doing() throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException, NoSuchMethodException, JSONException, InvocationTargetException {
++        //获取P
++        User p=get("user");
++        p.setDepartment("Midlet");
++        put("user",p);
++        System.out.println(p);
++
++    }
++
++    @Override
++    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
++        super.doGet(req, resp);
++    }
++}
+diff --git a/src/edu/nuist/util/Configuration.java b/src/edu/nuist/util/Configuration.java
+index 34df38c..63cf17b 100644
+--- a/src/edu/nuist/util/Configuration.java
++++ b/src/edu/nuist/util/Configuration.java
+@@ -8,6 +8,8 @@ public class Configuration {
+     public static final String beanPropFileExt = ".class.properties";
+     public static final String servletPropFileExt = ".servlet.properties";
+     public static final String sqlPropFileExt = ".sql.properties";
++    public static final String outputPropFileExt=".output.properties";
++
+     public static final String hibasePropFileExt="hibase.cfg.properties";
+ 
+     public static String webBeansClassPath = "";
+diff --git a/src/midlet.output.properties b/src/midlet.output.properties
+new file mode 100644
+index 0000000..6a787e5
+--- /dev/null
++++ b/src/midlet.output.properties
+@@ -0,0 +1 @@
++json=user
+\ No newline at end of file
+diff --git a/src/testlet.output.properties b/src/testlet.output.properties
+new file mode 100644
+index 0000000..fb6bf7e
+--- /dev/null
++++ b/src/testlet.output.properties
+@@ -0,0 +1,2 @@
++#json=user
++next=edu.nuist.servlet.Midlet
+\ No newline at end of file
+diff --git a/web/WEB-INF/web.xml b/web/WEB-INF/web.xml
+index d2b8a23..e1e2a82 100644
+--- a/web/WEB-INF/web.xml
++++ b/web/WEB-INF/web.xml
+@@ -5,7 +5,7 @@
+          version="3.1">
+     <servlet>
+         <servlet-name>init</servlet-name>
+-        <servlet-class>edu.nuist.servlet.InitLet</servlet-class>
++        <servlet-class>edu.nuist.servlet.Initlet</servlet-class>
+         <init-param>
+             <param-name>servletProp</param-name>
+             <param-value>WEB-INF\classes\</param-value>
+@@ -21,22 +21,23 @@
+ 
+         <load-on-startup>1</load-on-startup>
+     </servlet>
+-    <context-param>
+-        <param-name>context/param</param-name>
+-        <param-value>avalible during application</param-value>
+-    </context-param>
+     <servlet-mapping>
+         <servlet-name>init</servlet-name>
+         <url-pattern>/init</url-pattern>
+     </servlet-mapping>
++    <!--<context-param>-->
++        <!--<param-name>context/param</param-name>-->
++        <!--<param-value>avalible during application</param-value>-->
++    <!--</context-param>-->
++
+     <servlet>
+-        <servlet-name>testLet</servlet-name>
+-        <servlet-class>edu.nuist.TestLet</servlet-class>
++        <servlet-name>testlet</servlet-name>
++        <servlet-class>edu.nuist.Testlet</servlet-class>
+         <!--<servlet-class>edu.nuist.servlet.Hilet</servlet-class>-->
+     </servlet>
+     <servlet-mapping>
+-        <servlet-name>testLet</servlet-name>
+-        <url-pattern>/json</url-pattern>
++        <servlet-name>testlet</servlet-name>
++        <url-pattern>/test</url-pattern>
+     </servlet-mapping>
+ 
+ </web-app>
+\ No newline at end of file
+diff --git a/web/test.html b/web/test.html
+index 7a71338..e84d351 100644
+--- a/web/test.html
++++ b/web/test.html
+@@ -20,7 +20,7 @@
+                 function() {
+                     $.ajax({
+                         type : "post",
+-                        url : "json",
++                        url : "test",
+                         async : true,
+                         data: {str:JSON.stringify(obj)}
+                     })
+-- 
+1.8.4.msysgit.0
+
